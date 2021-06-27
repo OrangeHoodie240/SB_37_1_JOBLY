@@ -1,6 +1,7 @@
 "use strict";
 
 const request = require("supertest");
+const BadRequestError = require('../expressError');
 
 const db = require("../db");
 const app = require("../app");
@@ -65,7 +66,34 @@ describe("POST /companies", function () {
 
 /************************************** GET /companies */
 
+
+// Test GET /companies to make sure it rejects invalid filtering options. 
+
 describe("GET /companies", function () {
+  test('min employees cannot be greater than max employees', async ()=>{
+    const result = await request(app).get('/companies?minEmployees=500&maxEmployees=200');
+    expect(result.body.error.status).toBe(400);
+  });
+
+  test('Cannot give minEmployees anything but non positive integer values', async ()=>{
+    const resp1 =  request(app).get('/companies?minEmployees=fa'); 
+    const resp2 =  request(app).get('/companies?minEmployees=-1'); 
+    const resp3 =  request(app).get('/companies?minEmployees=.3'); 
+    let results = await Promise.all([resp1, resp2, resp3]); 
+    results = results.map(resp => resp.body.error.status);
+    expect(results).toEqual([400, 400, 400]);
+  });
+
+  test('Cannot give maxEmployees anything but non positive integer values', async ()=>{
+    const resp1 =  request(app).get('/companies?maxEmployees=fa'); 
+    const resp2 =  request(app).get('/companies?maxEmployees=-1'); 
+    const resp3 =  request(app).get('/companies?maxEmployees=.3'); 
+    let results = await Promise.all([resp1, resp2, resp3]); 
+    results = results.map(resp => resp.body.error.status);
+    expect(results).toEqual([400, 400, 400]);
+  });
+
+
   test("ok for anon", async function () {
     const resp = await request(app).get("/companies");
     expect(resp.body).toEqual({

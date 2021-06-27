@@ -57,7 +57,7 @@ describe("create", function () {
 });
 
 /************************************** findAll */
-
+// ***********NOTE I MADE A TEST FOR findWhere BECAUSE I CREATED A SEPERATE FUNCTION FOR FILTERING
 describe("findAll", function () {
   test("works: no filter", async function () {
     let companies = await Company.findAll();
@@ -86,6 +86,92 @@ describe("findAll", function () {
     ]);
   });
 });
+
+
+describe("findWhere", function(){
+  test('Returns all companies when no filter parameters', async ()=>{
+    const companies = await Company.findWhere({}); 
+    expect(companies.length).toEqual(3); 
+  });
+
+  test('returns first only those companies with at least the passed Minimum Employee number', async ()=>{
+    const options = {minEmployees: 2}; 
+    const expection = [{
+      handle: 'c2',
+      name: 'C2',
+      description: 'Desc2',
+      numEmployees: 2,
+      logoUrl: 'http://c2.img'
+    }, 
+    {
+      handle: 'c3',
+      name: 'C3',
+      description: 'Desc3',
+      numEmployees: 3,
+      logoUrl: 'http://c3.img'
+    }
+  ];
+    const companies = await Company.findWhere(options); 
+    expect(companies).toEqual(expection); 
+  });
+
+  test('returns first only those companies with no greater than the passed maxinum Employee number', async ()=>{
+    const options = {maxEmployees: 2}; 
+    const expection = [{
+      handle: 'c1',
+      name: 'C1',
+      description: 'Desc1',
+      numEmployees: 1,
+      logoUrl: 'http://c1.img'
+    }, 
+    {
+      handle: 'c2',
+      name: 'C2',
+      description: 'Desc2',
+      numEmployees: 2,
+      logoUrl: 'http://c2.img'
+    }
+  ];
+    const companies = await Company.findWhere(options); 
+    expect(companies).toEqual(expection); 
+  });
+
+  test('returns only companies with a sub string in the name', async ()=>{
+    // name contains a 2
+    const options = {name: 2}; 
+    const expection = [
+    {
+      handle: 'c2',
+      name: 'C2',
+      description: 'Desc2',
+      numEmployees: 2,
+      logoUrl: 'http://c2.img'
+    }
+  ];
+    const companies = await Company.findWhere(options); 
+    expect(companies).toEqual(expection);
+  });
+
+  test('filters companies by name case insensitive', async ()=>{
+    const options = {name: 'c3'}; 
+    const expection = [
+      {
+        handle: 'c3',
+        name: 'C3',
+        description: 'Desc3',
+        numEmployees: 3,
+        logoUrl: 'http://c3.img'
+      }
+    ];
+  
+    const companies = await Company.findWhere(options); 
+    expect(companies).toEqual(expection);
+    
+  });
+
+});
+
+
 
 /************************************** get */
 

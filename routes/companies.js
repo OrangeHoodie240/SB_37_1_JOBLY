@@ -51,8 +51,43 @@ router.post("/", ensureLoggedIn, async function (req, res, next) {
  */
 
 router.get("/", async function (req, res, next) {
+  let minEmployees = req.query.minEmployees; 
+  let maxEmployees = req.query.maxEmployees; 
+
+  if(minEmployees){
+    minEmployees = parseInt(minEmployees); 
+    if(Number.isNaN(minEmployees) || minEmployees < 0){
+      const err =  new BadRequestError('Invalid filter for Minimum Employees', 400);
+      return next(err);
+    }
+  }
+
+  if(maxEmployees){
+    maxEmployees = parseInt(maxEmployees); 
+    if(Number.isNaN(maxEmployees) || maxEmployees < 0){
+      const err = new BadRequestError('Invalid filter for Maxinum Employees', 400);
+      return next(err);
+    }
+  }
+
+  if(minEmployees && maxEmployees){
+    if(minEmployees > maxEmployees){
+      const err = new BadRequestError("Minimum Employees cannot be greater than Maxinum Employees", 400);
+      return next(err);
+    }
+  }
+
+  // exercise instructions say parameter should be called name whereas the comments above call it nameLike
+  // testing for both then
+  const name = (req.query.nameLike) ? req.query.nameLike : req.query.name; 
   try {
-    const companies = await Company.findAll();
+    let companies = null; 
+    if(minEmployees || maxEmployees || name){
+      companies = await Company.findWhere({name, minEmployees, maxEmployees}); 
+    }
+    else{
+      companies = await Company.findAll();
+    }
     return res.json({ companies });
   } catch (err) {
     return next(err);

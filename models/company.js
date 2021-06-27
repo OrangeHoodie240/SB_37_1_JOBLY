@@ -49,6 +49,8 @@ class Company {
    * Returns [{ handle, name, description, numEmployees, logoUrl }, ...]
    * */
 
+  // STUDENT NOTE I MADE A findWhere FUNCTION BELOW FOR THE FILTER CASE
+
   static async findAll() {
     const companiesRes = await db.query(
           `SELECT handle,
@@ -59,6 +61,47 @@ class Company {
            FROM companies
            ORDER BY name`);
     return companiesRes.rows;
+  }
+
+
+  // returns all companies matching flitering criteria
+  // options argument will have up to three properties
+  //     name/nameLike, minEmployees, maxEmployees
+  static async findWhere(options){
+    let whereClause = ''; 
+    if(options.name){
+      whereClause += `name ILIKE '${'%' + options.name + '%'}'`; 
+      if(options.minEmployees || options.maxEmployees){
+        whereClause += ' AND '; 
+      }
+    }
+    
+    if(options.minEmployees){
+      whereClause += `num_employees>=${options.minEmployees}`; 
+      if(options.maxEmployees){
+        whereClause += ' AND '; 
+      }
+    }
+
+    if(options.maxEmployees){
+      whereClause += `num_employees<=${options.maxEmployees}`;
+    }
+
+    if(whereClause){
+      whereClause = 'WHERE ' + whereClause + ' '; 
+    }
+
+    const companiesRes = await db.query(
+      `SELECT handle,
+              name,
+              description,
+              num_employees AS "numEmployees",
+              logo_url AS "logoUrl"
+       FROM companies
+       ${whereClause}
+       ORDER BY name`);
+    return companiesRes.rows;
+
   }
 
   /** Given a company handle, return data about company.
