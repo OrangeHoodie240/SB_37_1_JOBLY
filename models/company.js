@@ -183,6 +183,18 @@ class Company {
 
     if (!company) throw new NotFoundError(`No company: ${handle}`);
   }
+
+
+  static async companyExists(handle){
+    const query = `SELECT * FROM companies WHERE handle=$1`; 
+      let result = await db.query(query,[handle]); 
+    
+      if(result.rows.length === 1){
+        return true; 
+      }
+      return false; 
+  
+  }
 }
 
 
