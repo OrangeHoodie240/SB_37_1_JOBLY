@@ -102,15 +102,25 @@ class User {
    **/
 
   static async findAll() {
-    const result = await db.query(
-          `SELECT username,
-                  first_name AS "firstName",
-                  last_name AS "lastName",
-                  email,
-                  is_admin AS "isAdmin"
-           FROM users
-           ORDER BY username`,
-    );
+    const query = `SELECT 
+                        users.username, 
+                        users.first_name AS "firstName", 
+                        users.last_name AS "lastName", 
+                        users.email, 
+                        is_admin AS "isAdmin", 
+                        ARRAY_AGG(jobs.id) AS jobs
+                     FROM users 
+                     LEFT OUTER JOIN applications ON users.username = applications.username 
+                     LEFT OUTER JOIN jobs on jobs.id = applications.job_id 
+                     GROUP BY users.username 
+                     ORDER BY users.username`;
+    
+    const result = await db.query(query); 
+    for(let u of result.rows){
+      if(u.jobs[0] === null){
+        u.jobs.length = 0; 
+      }
+    }
 
     return result.rows;
   }
@@ -138,6 +148,8 @@ class User {
     const user = userRes.rows[0];
 
     if (!user) throw new NotFoundError(`No user: ${username}`);
+    const jobs = await User.getJobIds(username);
+    user.jobs = jobs; 
 
     return user;
   }
@@ -203,6 +215,22 @@ class User {
     const user = result.rows[0];
 
     if (!user) throw new NotFoundError(`No user: ${username}`);
+  }
+
+  static async apply(username, jobId){
+    const query = `INSERT INTO applications(username, job_id)
+                    VALUES($1, $2)
+                    RETURNING username, job_id`;
+    let results  = await db.query(query, [username, jobId]); 
+    results = results.rows[0]; 
+    return results; 
+  }
+
+  static async getJobIds(username){
+    const query = `SELECT job_id FROM applications WHERE username=$1`; 
+    let jobIds = await db.query(query, [username]); 
+    jobIds = jobIds.rows.map(j=>j.job_id); 
+    return jobIds;
   }
 }
 

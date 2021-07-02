@@ -13,6 +13,7 @@ const {
   commonAfterEach,
   commonAfterAll,
 } = require("./_testCommon");
+const Job = require("./job");
 
 beforeAll(commonBeforeAll);
 beforeEach(commonBeforeEach);
@@ -117,6 +118,7 @@ describe("findAll", function () {
         lastName: "U1L",
         email: "u1@email.com",
         isAdmin: false,
+        jobs: []
       },
       {
         username: "u2",
@@ -124,6 +126,7 @@ describe("findAll", function () {
         lastName: "U2L",
         email: "u2@email.com",
         isAdmin: false,
+        jobs: []
       },
     ]);
   });
@@ -139,6 +142,7 @@ describe("get", function () {
       firstName: "U1F",
       lastName: "U1L",
       email: "u1@email.com",
+      jobs: [],
       isAdmin: false,
     });
   });
@@ -226,5 +230,44 @@ describe("remove", function () {
     } catch (err) {
       expect(err instanceof NotFoundError).toBeTruthy();
     }
+  });
+});
+
+describe('apply', ()=>{
+  test('works as intended', async()=>{
+    let job = {title: 'Beard Samurai', salary: 200, equity: .2, companyHandle: 'c1'}; 
+    job = await Job.create(job); 
+    
+    await User.apply('u1', job.id); 
+    let row = await db.query(`SELECT * FROM applications WHERE username='u1'`); 
+    row = row.rows[0]; 
+    expect(row.job_id).toEqual(job.id); 
+
+  });
+});
+
+describe('getJobIds', ()=>{
+  test('works as intended', async ()=>{
+    const job1 = {title: 'Beard Samurai', salary: 200, equity: .2, companyHandle: 'c1'}; 
+    const job2 = {title: 'Beard General', salary: 200, equity: .2, companyHandle: 'c2'};
+
+    let jobs = await Promise.all([
+      Job.create(job1), 
+      Job.create(job2)
+    ]);
+    
+    await Promise.all([
+      User.apply('u1', jobs[0].id), 
+      User.apply('u1', jobs[1].id)
+    ]);
+
+    
+    let applied = await User.getJobIds('u1');
+    applied = new Set(applied); 
+
+    jobs = jobs.map(j=>j.id);
+    jobs = new Set(jobs); 
+
+    expect(applied).toEqual(jobs); 
   });
 });
